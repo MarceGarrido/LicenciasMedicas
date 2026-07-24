@@ -1,0 +1,138 @@
+<template>
+  <div class="nueva-licencia">
+    <div class="page-header">
+      <div>
+        <h1 class="page-header__title">Nueva Licencia</h1>
+        <p class="page-header__subtitle">Iniciar una solicitud de licencia médica</p>
+      </div>
+    </div>
+
+    <div class="glass-card" style="max-width: 640px;">
+      <form @submit.prevent="crearLicencia">
+        <div class="form-group">
+          <label class="form-label">Tipo de licencia *</label>
+          <select class="form-control" v-model="form.tipo" required>
+            <option value="">Seleccione el tipo...</option>
+            <option value="salud">Razón de Salud</option>
+            <option value="atendible">Razón Atendible</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label">Fecha de inicio *</label>
+            <input type="date" class="form-control" v-model="form.fecha_inicio" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de fin *</label>
+            <input type="date" class="form-control" v-model="form.fecha_fin" required />
+          </div>
+        </div>
+
+        <div v-if="diasCalc > 0" class="mb-4">
+          <span class="badge badge-primary">{{ diasCalc }} día{{ diasCalc !== 1 ? 's' : '' }} de licencia</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observaciones (opcional)</label>
+          <textarea class="form-control" v-model="form.observaciones" rows="3" placeholder="Alguna observación adicional..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Certificado médico (opcional)</label>
+          <div class="file-upload" @click="$refs.cert.click()" @dragover.prevent="dragActive = true" @dragleave="dragActive = false" @drop.prevent="onDrop" :class="{ 'file-upload--active': dragActive }">
+            <div v-if="certificado">
+              <div class="file-upload__icon">📎</div>
+              <div class="file-upload__text">{{ certificado.name }}</div>
+              <button type="button" class="btn btn-ghost btn-sm mt-2" @click.stop="certificado = null">Quitar archivo</button>
+            </div>
+            <div v-else>
+              <div class="file-upload__icon">📁</div>
+              <div class="file-upload__text">Arrastre un archivo o haga click para seleccionar</div>
+              <div class="file-upload__hint">PDF, JPG, PNG, DOC, DOCX (máx. 10MB)</div>
+            </div>
+          </div>
+          <input type="file" ref="cert" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" @change="onCertSelect" />
+          <p class="form-hint">Solo Bienestar podrá ver el certificado. Se enviará por email automáticamente.</p>
+        </div>
+
+        <p v-if="error" class="form-error mb-4">{{ error }}</p>
+
+        <div class="flex gap-3 justify-between">
+          <button type="button" class="btn btn-secondary" @click="$router.back()">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg" :disabled="submitting">
+            {{ submitting ? 'Enviando...' : '📤 Iniciar Licencia' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script>
+import api from '../services/api'
+
+export default {
+  name: 'NuevaLicenciaView',
+  inject: ['showToast'],
+  data() {
+    return {
+      form: { tipo: '', fecha_inicio: '', fecha_fin: '', observaciones: '' },
+      certificado: null,
+      dragActive: false,
+      submitting: false,
+      error: '',
+    }
+  },
+  computed: {
+    diasCalc() {
+      if (!this.form.fecha_inicio || !this.form.fecha_fin) return 0
+      const d1 = new Date(this.form.fecha_inicio)
+      const d2 = new Date(this.form.fecha_fin)
+      if (d2 < d1) return 0
+      return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1
+    },
+  },
+  methods: {
+    onCertSelect(e) {
+      this.certificado = e.target.files[0]
+    },
+    onDrop(e) {
+      this.dragActive = false
+      const file = e.dataTransfer.files[0]
+      if (file) this.certificado = file
+    },
+    async crearLicencia() {
+      this.error = ''
+      if (this.form.fecha_fin < this.form.fecha_inicio) {
+        this.error = 'La fecha de fin no puede ser anterior a la fecha de inicio.'
+        return
+      }
+
+      this.submitting = true
+      try {
+        const formData = new FormData()
+        formData.append('tipo', this.form.tipo)
+        formData.append('fecha_inicio', this.form.fecha_inicio)
+        formData.append('fecha_fin', this.form.fecha_fin)
+        if (this.form.observaciones) formData.append('observaciones', this.form.observaciones)
+        if (this.certificado) formData.append('certificado_medico', this.certificado)
+
+        await api.post('/licencias/', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        this.showToast('Licencia iniciada correctamente. Se envió notificación por email.', 'success')
+        this.$router.push('/licencias/mis-licencias')
+      } catch (e) {
+        const data = e.response?.data
+        if (data) {
+          const msgs = Object.values(data).flat()
+          this.error = msgs.join(' ')
+        } else {
+          this.error = 'Error al crear la licencia.'
+        }
+      } finally {
+        this.submitting = false
+      }
+    },
+  },
+}
+</script>
