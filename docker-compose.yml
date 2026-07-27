@@ -39,8 +39,6 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-    ports:
-      - "80:80"
 
 volumes:
   postgres_data:
