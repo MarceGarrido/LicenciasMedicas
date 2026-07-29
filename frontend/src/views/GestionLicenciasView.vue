@@ -84,6 +84,7 @@
               </td>
               <td>
                 <router-link :to="`/personal/${l.usuario}/historial`" class="btn btn-ghost btn-sm" title="Ver historial">👤</router-link>
+                <button v-if="tieneRol(['admin'])" class="btn btn-ghost btn-sm text-danger" @click="eliminarLicencia(l.id)" title="Eliminar licencia">🗑️</button>
               </td>
             </tr>
           </tbody>
@@ -95,6 +96,7 @@
 
 <script>
 import api from '../services/api'
+import authService from '../services/authService'
 
 export default {
   name: 'GestionLicenciasView',
@@ -149,6 +151,16 @@ export default {
         this.showToast('Error al descargar certificado.', 'error')
       }
     },
+    async eliminarLicencia(id) {
+      if (!confirm('¿Estás seguro de que deseas eliminar esta licencia? Esta acción no se puede deshacer.')) return
+      try {
+        await api.delete(`/licencias/${id}/`)
+        this.showToast('Licencia eliminada.', 'success')
+        await this.cargar()
+      } catch (e) {
+        this.showToast('Error al eliminar licencia.', 'error')
+      }
+    },
     exportarExcel() {
       this.exportar('excel')
     },
@@ -173,6 +185,12 @@ export default {
     formatDate(d) {
       if (!d) return ''
       return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    },
+    tieneRol(roles) {
+      const usuario = authService.getUsuario()
+      if (!usuario) return false
+      if (usuario.rol === 'admin') return true
+      return roles.includes(usuario.rol)
     },
   },
 }

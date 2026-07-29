@@ -277,10 +277,11 @@ class LicenciaListCreateView(generics.ListCreateAPIView):
             logger.error(f'Error al enviar email de nueva licencia: {e}')
 
 
-class LicenciaDetailView(generics.RetrieveUpdateAPIView):
+class LicenciaDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     GET: Dueño o Bienestar pueden ver detalle.
     PATCH: Solo Bienestar puede actualizar estado.
+    DELETE: Solo Admin puede borrar licencias.
     """
     queryset = Licencia.objects.select_related(
         'usuario', 'usuario__jerarquia', 'usuario__dependencia',
@@ -296,6 +297,8 @@ class LicenciaDetailView(generics.RetrieveUpdateAPIView):
     def get_permissions(self):
         if self.request.method in ('PATCH', 'PUT'):
             return [IsAuthenticated(), EsAdminOBienestar()]
+        if self.request.method == 'DELETE':
+            return [IsAuthenticated(), EsAdmin()]
         return [IsAuthenticated(), EsDuenoOBienestar()]
 
 
