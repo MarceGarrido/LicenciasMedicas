@@ -115,7 +115,7 @@ router.beforeEach((to, from, next) => {
   // Verificar roles
   if (to.meta.roles) {
     const usuario = authService.getUsuario()
-    if (usuario && !to.meta.roles.includes(usuario.rol)) {
+    if (usuario && usuario.rol !== 'admin' && !to.meta.roles.includes(usuario.rol)) {
       next('/')
       return
     }

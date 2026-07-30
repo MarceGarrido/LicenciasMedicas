@@ -83,7 +83,8 @@ class UsuarioListSerializer(serializers.ModelSerializer):
         return None
 
     def get_total_licencias(self, obj):
-        return obj.licencias.count()
+        # Usar el valor anotado si existe (evita N+1 queries)
+        return getattr(obj, 'total_licencias', obj.licencias.count())
 
 
 class UsuarioDetailSerializer(serializers.ModelSerializer):

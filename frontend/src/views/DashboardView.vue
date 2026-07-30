@@ -20,7 +20,7 @@
     <div class="glass-card mb-6">
       <h3 class="mb-4">Acciones rápidas</h3>
       <div class="quick-actions">
-        <router-link v-if="tieneRol(['personal'])" to="/licencias/nueva" class="quick-action">
+        <router-link v-if="tieneRol(['personal', 'admin'])" to="/licencias/nueva" class="quick-action">
           <span class="quick-action__icon">➕</span>
           <span class="quick-action__text">Nueva Licencia</span>
         </router-link>
@@ -28,15 +28,15 @@
           <span class="quick-action__icon">📋</span>
           <span class="quick-action__text">Ver Circulares</span>
         </router-link>
-        <router-link v-if="tieneRol(['rrhh'])" to="/circulares/gestionar" class="quick-action">
+        <router-link v-if="tieneRol(['rrhh', 'admin'])" to="/circulares/gestionar" class="quick-action">
           <span class="quick-action__icon">📤</span>
           <span class="quick-action__text">Subir Circular</span>
         </router-link>
-        <router-link v-if="tieneRol(['bienestar'])" to="/licencias/gestion" class="quick-action">
+        <router-link v-if="tieneRol(['bienestar', 'admin'])" to="/licencias/gestion" class="quick-action">
           <span class="quick-action__icon">📑</span>
           <span class="quick-action__text">Ver Licencias</span>
         </router-link>
-        <router-link v-if="tieneRol(['bienestar'])" to="/reportes" class="quick-action">
+        <router-link v-if="tieneRol(['bienestar', 'admin'])" to="/reportes" class="quick-action">
           <span class="quick-action__icon">📈</span>
           <span class="quick-action__text">Reportes</span>
         </router-link>
@@ -48,12 +48,16 @@
     </div>
 
     <!-- Recent circulars -->
-    <div class="glass-card" v-if="circulares.length">
+    <div class="glass-card">
       <div class="flex items-center justify-between mb-4">
         <h3>Últimas Circulares</h3>
         <router-link to="/circulares" class="btn btn-ghost btn-sm">Ver todas →</router-link>
       </div>
-      <div class="circulares-list">
+      <div v-if="circulares.length === 0" class="text-center p-4 text-muted border border-dashed rounded-lg" style="border-color: var(--border-color)">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5">📋</div>
+        <div>No hay circulares recientes publicadas.</div>
+      </div>
+      <div v-else class="circulares-list">
         <div v-for="c in circulares" :key="c.id" class="circular-item">
           <div class="circular-item__icon">📄</div>
           <div class="circular-item__info">
@@ -150,24 +154,28 @@ export default {
     async cargarDatos() {
       this.loading = true
       try {
-        const [circularesRes, licenciasRes] = await Promise.all([
+        const fetchPersonal = this.tieneRol(['bienestar', 'rrhh', 'admin'])
+        const requests = [
           api.get('/circulares/', { params: { page_size: 5 } }),
           api.get('/licencias/'),
-        ])
+        ]
+        if (fetchPersonal) {
+          requests.push(api.get('/personal/').catch(() => ({ data: [] })))
+        }
 
+        const responses = await Promise.all(requests)
+        
+        const circularesRes = responses[0]
+        const licenciasRes = responses[1]
+        
         this.circulares = (circularesRes.data.results || circularesRes.data).slice(0, 5)
         const licencias = licenciasRes.data.results || licenciasRes.data
         this.licenciasCount = licenciasRes.data.count || licencias.length
         this.licenciasActivas = licencias.filter(l => ['iniciada', 'en_curso'].includes(l.estado)).length
 
-        if (this.tieneRol(['bienestar', 'rrhh', 'admin'])) {
-          try {
-            const personalRes = await api.get('/personal/')
-            const personal = personalRes.data.results || personalRes.data
-            this.personalCount = Array.isArray(personal) ? personal.length : 0
-          } catch {
-            this.personalCount = 0
-          }
+        if (fetchPersonal && responses[2]) {
+          const personal = responses[2].data.results || responses[2].data
+          this.personalCount = Array.isArray(personal) ? personal.length : 0
         }
       } catch (e) {
         console.error('Error cargando dashboard:', e)

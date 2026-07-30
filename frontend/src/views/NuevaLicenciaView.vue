@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <div class="glass-card" style="max-width: 640px;">
+    <div v-if="!success" class="glass-card" style="max-width: 640px;">
       <form @submit.prevent="crearLicencia">
         <div class="form-group">
           <label class="form-label">Tipo de licencia *</label>
@@ -66,6 +66,19 @@
         </div>
       </form>
     </div>
+
+    <!-- Pantalla de éxito -->
+    <div v-if="success" class="glass-card" style="max-width: 640px; text-align: center; padding: 3rem 1.5rem;">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+      <h2 style="margin-bottom: 1rem; color: var(--accent-success)">¡Licencia solicitada con éxito!</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+        Tu solicitud ha sido registrada correctamente y se ha notificado a Bienestar y a tu jefe directo.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <router-link to="/" class="btn btn-secondary">Ir al Inicio</router-link>
+        <router-link :to="`/personal/${usuarioId}/historial`" class="btn btn-primary">Ver mis licencias</router-link>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -82,6 +95,8 @@ export default {
       dragActive: false,
       submitting: false,
       error: '',
+      success: false,
+      usuarioId: null,
     }
   },
   computed: {
@@ -102,6 +117,16 @@ export default {
       const file = e.dataTransfer.files[0]
       if (file) this.certificado = file
     },
+    async cargarUsuario() {
+      // Necesitamos el ID del usuario para el botón "Ver mis licencias"
+      try {
+        const authService = (await import('../services/authService')).default
+        const usr = authService.getUsuario()
+        if (usr) this.usuarioId = usr.id
+      } catch (e) {
+        console.error(e)
+      }
+    },
     async crearLicencia() {
       this.error = ''
       if (this.form.fecha_fin < this.form.fecha_inicio) {
@@ -119,8 +144,9 @@ export default {
         if (this.certificado) formData.append('certificado_medico', this.certificado)
 
         await api.post('/licencias/', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-        this.showToast('Licencia iniciada correctamente. Se envió notificación por email.', 'success')
-        this.$router.push('/licencias/mis-licencias')
+        await this.cargarUsuario()
+        this.success = true
+        this.showToast('Licencia iniciada correctamente.', 'success')
       } catch (e) {
         const data = e.response?.data
         if (data) {

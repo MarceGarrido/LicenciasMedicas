@@ -766,6 +766,8 @@ textarea.form-control {
 .text-sm { font-size: 0.875rem; }
 .text-xs { font-size: 0.75rem; }
 .text-muted { color: var(--text-secondary); }
+.text-danger { color: var(--accent-danger); }
+.text-danger:hover { color: #dc2626; }
 .font-semibold { font-weight: 600; }
 .font-bold { font-weight: 700; }
 .mt-1 { margin-top: 0.25rem; }

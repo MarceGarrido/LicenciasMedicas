@@ -46,7 +46,7 @@
         <div class="empty-state__title">No hay licencias</div>
       </div>
       <div v-else style="overflow-x:auto">
-        <table class="data-table">
+        <table class="data-table hidden-mobile">
           <thead>
             <tr>
               <th>Personal</th>
@@ -84,11 +84,62 @@
               </td>
               <td>
                 <router-link :to="`/personal/${l.usuario}/historial`" class="btn btn-ghost btn-sm" title="Ver historial">👤</router-link>
-                <button v-if="tieneRol(['admin'])" class="btn btn-ghost btn-sm text-danger" @click="eliminarLicencia(l.id)" title="Eliminar licencia">🗑️</button>
+                <button v-if="tieneRol(['admin'])" class="btn btn-ghost btn-sm text-danger" @click="confirmarEliminar(l)" title="Eliminar licencia">🗑️</button>
               </td>
             </tr>
           </tbody>
         </table>
+
+        <!-- Mobile cards view -->
+        <div class="mobile-cards show-mobile">
+          <div v-for="l in licencias" :key="`mob-${l.id}`" class="licencia-mob-card">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="font-semibold">{{ l.usuario_nombre }}</div>
+                <div class="text-xs text-muted">{{ l.usuario_jerarquia }} - {{ l.usuario_dependencia }}</div>
+              </div>
+              <span :class="['badge', l.tipo === 'salud' ? 'badge-warning' : 'badge-info']">{{ l.tipo_display }}</span>
+            </div>
+            
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-sm">
+                {{ formatDate(l.fecha_inicio) }} <span class="text-muted mx-1">→</span> {{ formatDate(l.fecha_fin) }}
+                <div class="text-xs text-muted mt-1">{{ l.dias_licencia }} días</div>
+              </div>
+              <div>
+                <button v-if="l.tiene_certificado" class="btn btn-ghost btn-sm" @click="descargarCert(l)" title="Descargar certificado">📎 Cert.</button>
+              </div>
+            </div>
+
+            <div class="flex gap-2 items-center">
+              <select class="form-control" style="padding:0.25rem 0.5rem;font-size:0.8125rem;flex:1" :value="l.estado" @change="cambiarEstado(l, $event.target.value)">
+                <option value="iniciada">Iniciada</option>
+                <option value="en_curso">En Curso</option>
+                <option value="finalizada">Finalizada</option>
+              </select>
+              <router-link :to="`/personal/${l.usuario}/historial`" class="btn btn-secondary btn-icon" title="Ver historial">👤</router-link>
+              <button v-if="tieneRol(['admin'])" class="btn btn-secondary btn-icon text-danger" @click="confirmarEliminar(l)" title="Eliminar licencia">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal confirmación de eliminación -->
+    <div v-if="licenciaToDelete" class="modal-overlay" @click.self="licenciaToDelete = null">
+      <div class="modal">
+        <div class="modal__header">
+          <h3 class="modal__title text-danger">Eliminar Licencia</h3>
+          <button class="btn-ghost btn-icon" @click="licenciaToDelete = null">✕</button>
+        </div>
+        <div class="modal__body">
+          <p>¿Estás seguro de que deseas eliminar la licencia de <strong>{{ licenciaToDelete.usuario_nombre }}</strong>?</p>
+          <p class="text-sm text-muted mt-2">Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn-secondary" @click="licenciaToDelete = null">Cancelar</button>
+          <button class="btn btn-danger" @click="eliminarLicencia">Sí, eliminar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -106,6 +157,7 @@ export default {
       licencias: [],
       loading: true,
       filtro: { tipo: '', estado: '', fecha_desde: '', fecha_hasta: '' },
+      licenciaToDelete: null,
     }
   },
   async mounted() {
@@ -151,11 +203,15 @@ export default {
         this.showToast('Error al descargar certificado.', 'error')
       }
     },
-    async eliminarLicencia(id) {
-      if (!confirm('¿Estás seguro de que deseas eliminar esta licencia? Esta acción no se puede deshacer.')) return
+    confirmarEliminar(l) {
+      this.licenciaToDelete = l
+    },
+    async eliminarLicencia() {
+      if (!this.licenciaToDelete) return
       try {
-        await api.delete(`/licencias/${id}/`)
+        await api.delete(`/licencias/${this.licenciaToDelete.id}/`)
         this.showToast('Licencia eliminada.', 'success')
+        this.licenciaToDelete = null
         await this.cargar()
       } catch (e) {
         this.showToast('Error al eliminar licencia.', 'error')
@@ -206,8 +262,23 @@ export default {
   flex: 1;
   min-width: 150px;
 }
+.show-mobile { display: none; }
+.hidden-mobile { display: table; }
+
+.licencia-mob-card {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.licencia-mob-card:last-child {
+  border-bottom: none;
+}
+.mx-1 { margin: 0 0.25rem; }
+
 @media (max-width: 768px) {
   .filters { flex-direction: column; }
   .filters .form-group { min-width: auto; }
+  
+  .show-mobile { display: block; }
+  .hidden-mobile { display: none; }
 }
 </style>

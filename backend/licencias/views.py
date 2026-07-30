@@ -5,11 +5,12 @@ import logging
 from django.contrib.auth import authenticate
 from django.db.models import Count, Q
 from rest_framework import status, generics, viewsets
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.decorators import api_view, permission_classes, action, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.throttling import ScopedRateThrottle
 
 from .models import (
     Ciudad, Dependencia, TipoPersonal, Jerarquia,
@@ -39,8 +40,10 @@ logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([ScopedRateThrottle])
 def login_view(request):
     """Login con username y password, devuelve token."""
+    request.throttle_scope = 'login'
     username = request.data.get('username', '').strip()
     password = request.data.get('password', '')
 
@@ -330,9 +333,23 @@ def subir_certificado_view(request, pk):
 
     # Validar extensión
     extension = archivo.name.split('.')[-1].lower()
-    if extension not in ('pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'):
+    extensiones_permitidas = ('pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx')
+    if extension not in extensiones_permitidas:
         return Response(
             {'error': 'Formato no permitido. Use PDF, JPG, PNG, DOC o DOCX.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Validar tipo MIME del contenido real
+    mime_permitidos = (
+        'application/pdf',
+        'image/jpeg', 'image/png',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+    if archivo.content_type not in mime_permitidos:
+        return Response(
+            {'error': 'El tipo de archivo no coincide con la extensión. Verifique el archivo.'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -449,8 +466,9 @@ def personal_licencias_view(request, pk):
 @permission_classes([IsAuthenticated, EsAdminOBienestar])
 def reportes_resumen_view(request):
     """Estadísticas generales para el dashboard de Bienestar."""
-    from django.db.models.functions import TruncMonth, ExtractMonth, ExtractYear
-    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from django.db.models.functions import TruncMonth
+    from datetime import timedelta
 
     # Filtros de fecha
     fecha_desde = request.query_params.get('fecha_desde')
@@ -469,7 +487,7 @@ def reportes_resumen_view(request):
     por_estado = licencias.values('estado').annotate(total=Count('id'))
 
     # Por mes (últimos 12 meses)
-    hace_12_meses = datetime.now() - timedelta(days=365)
+    hace_12_meses = timezone.now() - timedelta(days=365)
     por_mes = licencias.filter(
         fecha_creacion__gte=hace_12_meses
     ).annotate(

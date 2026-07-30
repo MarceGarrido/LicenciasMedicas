@@ -50,9 +50,11 @@
         </router-link>
       </div>
 
-      <!-- Bienestar -->
+      <!-- Bienestar / Gestión -->
       <div v-if="tieneRol(['bienestar'])" class="sidebar__section">
-        <span v-if="!collapsed" class="sidebar__section-title">Bienestar</span>
+        <span v-if="!collapsed" class="sidebar__section-title">
+          {{ isSoloAdmin ? 'Gestión' : 'Bienestar' }}
+        </span>
         <router-link to="/licencias/gestion" class="sidebar__link" active-class="sidebar__link--active">
           <span class="sidebar__link-icon">📑</span>
           <span v-if="!collapsed" class="sidebar__link-text">Gestión Licencias</span>
@@ -143,6 +145,12 @@ export default {
   data() {
     return {
       isMobile: window.innerWidth <= 768,
+    }
+  },
+  computed: {
+    isSoloAdmin() {
+      const usuario = authService.getUsuario()
+      return usuario && usuario.rol === 'admin'
     }
   },
   mounted() {
