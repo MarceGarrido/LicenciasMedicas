@@ -188,7 +188,6 @@ class Licencia(models.Model):
         ('iniciada', 'Iniciada'),
         ('en_curso', 'En Curso'),
         ('finalizada', 'Finalizada'),
-        ('rechazada', 'Rechazada'),
     ]
 
     usuario = models.ForeignKey(
@@ -201,7 +200,7 @@ class Licencia(models.Model):
         max_length=20,
         choices=ESTADO_CHOICES,
         default='iniciada',
-        help_text='Estado real en base de datos (solo usado si es rechazada)'
+        help_text='Estado real en base de datos (obsoleto, se calcula en estado_actual)'
     )
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
@@ -229,9 +228,6 @@ class Licencia(models.Model):
     @property
     def estado_actual(self):
         """Calcula el estado de forma dinámica basado en la fecha."""
-        if self.estado == 'rechazada':
-            return 'rechazada'
-            
         from django.utils import timezone
         hoy = timezone.localdate()
         

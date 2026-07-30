@@ -70,8 +70,7 @@
               <td><span :class="['badge', l.tipo === 'salud' ? 'badge-warning' : 'badge-info']">{{ l.tipo_display }}</span></td>
               <td>
                 <div class="flex items-center gap-1">
-                  <span class="badge" :class="{'badge-primary': l.estado === 'iniciada', 'badge-warning': l.estado === 'en_curso', 'badge-success': l.estado === 'finalizada', 'badge-danger': l.estado === 'rechazada'}">{{ l.estado_display }}</span>
-                  <button v-if="l.estado !== 'rechazada' && tieneRol(['bienestar', 'admin'])" class="btn btn-ghost btn-sm text-danger" style="padding:0;width:24px;height:24px" title="Rechazar licencia" @click="cambiarEstado(l, 'rechazada')">✖</button>
+                  <span class="badge" :class="{'badge-primary': l.estado === 'iniciada', 'badge-warning': l.estado === 'en_curso', 'badge-success': l.estado === 'finalizada'}">{{ l.estado_display }}</span>
                 </div>
               </td>
               <td class="text-sm">{{ formatDate(l.fecha_inicio) }}</td>
@@ -112,9 +111,8 @@
 
             <div class="flex gap-2 items-center">
               <div class="flex-1">
-                <span class="badge" :class="{'badge-primary': l.estado === 'iniciada', 'badge-warning': l.estado === 'en_curso', 'badge-success': l.estado === 'finalizada', 'badge-danger': l.estado === 'rechazada'}">{{ l.estado_display }}</span>
+                <span class="badge" :class="{'badge-primary': l.estado === 'iniciada', 'badge-warning': l.estado === 'en_curso', 'badge-success': l.estado === 'finalizada'}">{{ l.estado_display }}</span>
               </div>
-              <button v-if="l.estado !== 'rechazada' && tieneRol(['bienestar', 'admin'])" class="btn btn-secondary btn-icon text-danger" title="Rechazar" @click="cambiarEstado(l, 'rechazada')">✖</button>
               <router-link :to="`/personal/${l.usuario}/historial`" class="btn btn-secondary btn-icon" title="Ver historial">👤</router-link>
               <button v-if="tieneRol(['admin'])" class="btn btn-secondary btn-icon text-danger" @click="confirmarEliminar(l)" title="Eliminar licencia">🗑️</button>
             </div>
@@ -173,21 +171,9 @@ export default {
         const res = await api.get('/licencias/', { params })
         this.licencias = res.data.results || res.data
       } catch (e) {
-        console.error(e)
+        this.error = 'Error al cargar los datos.'
       } finally {
         this.loading = false
-      }
-    },
-    async cambiarEstado(l, nuevoEstado) {
-      if (nuevoEstado === 'rechazada' && !confirm('¿Estás seguro de que deseas rechazar esta licencia? Esta acción no cambiará los estados automáticos si te equivocas.')) {
-        return
-      }
-      try {
-        await api.patch(`/licencias/${l.id}/`, { estado: nuevoEstado })
-        this.showToast('Estado actualizado.', 'success')
-        await this.cargar()
-      } catch (e) {
-        this.showToast('Error al actualizar estado.', 'error')
       }
     },
     async descargarCert(l) {
