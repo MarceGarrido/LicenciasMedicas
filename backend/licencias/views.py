@@ -276,9 +276,10 @@ class LicenciaListCreateView(generics.ListCreateAPIView):
         # Enviar emails automáticos
         try:
             enviar_email_nueva_licencia(licencia)
+            if licencia.certificado_medico:
+                enviar_email_certificado(licencia)
         except Exception as e:
             logger.error(f'Error al enviar email de nueva licencia: {e}')
-
 
 class LicenciaDetailView(generics.RetrieveUpdateDestroyAPIView):
     """

@@ -193,10 +193,16 @@ export default {
     async descargarCert(l) {
       try {
         const res = await api.get(`/licencias/${l.id}/certificado/descargar/`, { responseType: 'blob' })
+        const type = res.data.type || ''
+        let ext = 'pdf'
+        if (type.includes('jpeg') || type.includes('jpg')) ext = 'jpg'
+        else if (type.includes('png')) ext = 'png'
+        else if (type.includes('msword') || type.includes('doc')) ext = 'docx'
+
         const url = URL.createObjectURL(res.data)
         const a = document.createElement('a')
         a.href = url
-        a.download = `certificado_${l.usuario_nombre}.pdf`
+        a.download = `certificado_${l.usuario_nombre}.${ext}`
         a.click()
         URL.revokeObjectURL(url)
       } catch (e) {
