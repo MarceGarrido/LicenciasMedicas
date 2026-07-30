@@ -127,7 +127,12 @@ Este es un mensaje automático del Sistema de Licencias Médicas.
             to=[email_bienestar],
         )
         # Adjuntar el certificado
-        email.attach_file(licencia.certificado_medico.path)
+        licencia.certificado_medico.open()
+        file_name = licencia.certificado_medico.name.split('/')[-1]
+        file_content = licencia.certificado_medico.read()
+        licencia.certificado_medico.close()
+        
+        email.attach(file_name, file_content)
         email.send(fail_silently=False)
         logger.info(f'Email con certificado enviado a Bienestar: {email_bienestar}')
         return True
