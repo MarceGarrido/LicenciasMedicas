@@ -209,11 +209,15 @@ class LicenciaCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'tipo', 'fecha_inicio', 'fecha_fin', 'observaciones', 'certificado_medico']
 
     def validate(self, data):
-        if data['fecha_fin'] < data['fecha_inicio']:
+        if data.get('fecha_fin') and data.get('fecha_inicio') and data['fecha_fin'] < data['fecha_inicio']:
             raise serializers.ValidationError(
                 {'fecha_fin': 'La fecha de fin no puede ser anterior a la fecha de inicio.'}
             )
         return data
+
+    def validate_certificado_medico(self, value):
+        from .utils import validar_y_convertir_a_pdf
+        return validar_y_convertir_a_pdf(value)
 
     def create(self, validated_data):
         validated_data['usuario'] = self.context['request'].user

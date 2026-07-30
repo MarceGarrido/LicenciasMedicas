@@ -49,10 +49,10 @@
             <div v-else>
               <div class="file-upload__icon">📁</div>
               <div class="file-upload__text">Arrastre un archivo o haga click para seleccionar</div>
-              <div class="file-upload__hint">PDF, JPG, PNG, DOC, DOCX (máx. 10MB)</div>
+              <div class="file-upload__hint">PDF, JPG, PNG (máx. 10MB). Las imágenes se convertirán a PDF automáticamente.</div>
             </div>
           </div>
-          <input type="file" ref="cert" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" @change="onCertSelect" />
+          <input type="file" ref="cert" style="display:none" accept=".pdf,.jpg,.jpeg,.png" @change="onCertSelect" />
           <p class="form-hint">Solo Bienestar podrá ver el certificado. Se enviará por email automáticamente.</p>
         </div>
 

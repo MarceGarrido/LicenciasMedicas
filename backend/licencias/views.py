@@ -325,34 +325,20 @@ def subir_certificado_view(request, pk):
             status=status.HTTP_403_FORBIDDEN
         )
 
-    archivo = request.FILES.get('certificado')
+    archivo = request.FILES.get('certificado_medico')
     if not archivo:
         return Response(
             {'error': 'Debe adjuntar un archivo.'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Validar extensión
-    extension = archivo.name.split('.')[-1].lower()
-    extensiones_permitidas = ('pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx')
-    if extension not in extensiones_permitidas:
-        return Response(
-            {'error': 'Formato no permitido. Use PDF, JPG, PNG, DOC o DOCX.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    from .utils import validar_y_convertir_a_pdf
+    from rest_framework.exceptions import ValidationError
 
-    # Validar tipo MIME del contenido real
-    mime_permitidos = (
-        'application/pdf',
-        'image/jpeg', 'image/png',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    )
-    if archivo.content_type not in mime_permitidos:
-        return Response(
-            {'error': 'El tipo de archivo no coincide con la extensión. Verifique el archivo.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    try:
+        archivo = validar_y_convertir_a_pdf(archivo)
+    except ValidationError as e:
+        return Response({'error': str(e.detail[0])}, status=status.HTTP_400_BAD_REQUEST)
 
     licencia.certificado_medico = archivo
     licencia.save()
