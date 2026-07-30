@@ -176,9 +176,12 @@ class LicenciaSerializer(serializers.ModelSerializer):
     usuario_jerarquia = serializers.CharField(source='usuario.jerarquia.nombre', read_only=True, default=None)
     usuario_dependencia = serializers.CharField(source='usuario.dependencia.nombre', read_only=True, default=None)
     usuario_ciudad = serializers.SerializerMethodField()
+    
     tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
-    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    estado = serializers.CharField(source='estado_actual', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_actual_display', read_only=True)
     dias_licencia = serializers.IntegerField(read_only=True)
+    
     tiene_certificado = serializers.SerializerMethodField()
 
     class Meta:
@@ -191,7 +194,7 @@ class LicenciaSerializer(serializers.ModelSerializer):
             'observaciones', 'tiene_certificado',
             'fecha_creacion', 'fecha_actualizacion',
         ]
-        read_only_fields = ['usuario', 'fecha_creacion', 'fecha_actualizacion']
+        read_only_fields = ['usuario', 'fecha_creacion', 'fecha_actualizacion', 'estado']
 
     def get_usuario_ciudad(self, obj):
         if obj.usuario.dependencia and obj.usuario.dependencia.ciudad:

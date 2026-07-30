@@ -69,11 +69,10 @@
               <td class="text-sm">{{ l.usuario_dependencia }}<br><span class="text-xs text-muted">{{ l.usuario_ciudad }}</span></td>
               <td><span :class="['badge', l.tipo === 'salud' ? 'badge-warning' : 'badge-info']">{{ l.tipo_display }}</span></td>
               <td>
-                <select class="form-control" style="padding:0.25rem 0.5rem;font-size:0.8125rem;min-width:110px" :value="l.estado" @change="cambiarEstado(l, $event.target.value)">
-                  <option value="iniciada">Iniciada</option>
-                  <option value="en_curso">En Curso</option>
-                  <option value="finalizada">Finalizada</option>
-                </select>
+                <div class="flex items-center gap-1">
+                  <span class="badge" :class="{'badge-primary': l.estado === 'iniciada', 'badge-warning': l.estado === 'en_curso', 'badge-success': l.estado === 'finalizada', 'badge-danger': l.estado === 'rechazada'}">{{ l.estado_display }}</span>
+                  <button v-if="l.estado !== 'rechazada' && tieneRol(['bienestar', 'admin'])" class="btn btn-ghost btn-sm text-danger" style="padding:0;width:24px;height:24px" title="Rechazar licencia" @click="cambiarEstado(l, 'rechazada')">✖</button>
+                </div>
               </td>
               <td class="text-sm">{{ formatDate(l.fecha_inicio) }}</td>
               <td class="text-sm">{{ formatDate(l.fecha_fin) }}</td>
@@ -112,11 +111,10 @@
             </div>
 
             <div class="flex gap-2 items-center">
-              <select class="form-control" style="padding:0.25rem 0.5rem;font-size:0.8125rem;flex:1" :value="l.estado" @change="cambiarEstado(l, $event.target.value)">
-                <option value="iniciada">Iniciada</option>
-                <option value="en_curso">En Curso</option>
-                <option value="finalizada">Finalizada</option>
-              </select>
+              <div class="flex-1">
+                <span class="badge" :class="{'badge-primary': l.estado === 'iniciada', 'badge-warning': l.estado === 'en_curso', 'badge-success': l.estado === 'finalizada', 'badge-danger': l.estado === 'rechazada'}">{{ l.estado_display }}</span>
+              </div>
+              <button v-if="l.estado !== 'rechazada' && tieneRol(['bienestar', 'admin'])" class="btn btn-secondary btn-icon text-danger" title="Rechazar" @click="cambiarEstado(l, 'rechazada')">✖</button>
               <router-link :to="`/personal/${l.usuario}/historial`" class="btn btn-secondary btn-icon" title="Ver historial">👤</router-link>
               <button v-if="tieneRol(['admin'])" class="btn btn-secondary btn-icon text-danger" @click="confirmarEliminar(l)" title="Eliminar licencia">🗑️</button>
             </div>
@@ -181,13 +179,15 @@ export default {
       }
     },
     async cambiarEstado(l, nuevoEstado) {
+      if (nuevoEstado === 'rechazada' && !confirm('¿Estás seguro de que deseas rechazar esta licencia? Esta acción no cambiará los estados automáticos si te equivocas.')) {
+        return
+      }
       try {
         await api.patch(`/licencias/${l.id}/`, { estado: nuevoEstado })
-        l.estado = nuevoEstado
         this.showToast('Estado actualizado.', 'success')
+        await this.cargar()
       } catch (e) {
         this.showToast('Error al actualizar estado.', 'error')
-        await this.cargar()
       }
     },
     async descargarCert(l) {

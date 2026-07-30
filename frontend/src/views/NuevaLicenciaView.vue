@@ -24,13 +24,20 @@
             <input type="date" class="form-control" v-model="form.fecha_inicio" required />
           </div>
           <div class="form-group">
-            <label class="form-label">Fecha de fin *</label>
-            <input type="date" class="form-control" v-model="form.fecha_fin" required />
+            <label class="form-label">Cantidad de días *</label>
+            <input type="number" class="form-control" v-model="form.dias" min="1" required placeholder="Ej: 1, 2, 7, 15..." />
           </div>
         </div>
 
-        <div v-if="diasCalc > 0" class="mb-4">
-          <span class="badge badge-primary">{{ diasCalc }} día{{ diasCalc !== 1 ? 's' : '' }} de licencia</span>
+        <div class="flex gap-2 mb-4">
+          <button type="button" class="badge badge-secondary" style="cursor:pointer;" @click="form.dias = 1">24 hs (1 día)</button>
+          <button type="button" class="badge badge-secondary" style="cursor:pointer;" @click="form.dias = 2">48 hs (2 días)</button>
+          <button type="button" class="badge badge-secondary" style="cursor:pointer;" @click="form.dias = 3">72 hs (3 días)</button>
+          <button type="button" class="badge badge-secondary" style="cursor:pointer;" @click="form.dias = 4">96 hs (4 días)</button>
+        </div>
+
+        <div v-if="fechaFinCalculada" class="mb-4">
+          <span class="badge badge-primary">Finaliza el: {{ fechaFinCalculada }}</span>
         </div>
 
         <div class="form-group">
@@ -90,7 +97,7 @@ export default {
   inject: ['showToast'],
   data() {
     return {
-      form: { tipo: '', fecha_inicio: '', fecha_fin: '', observaciones: '' },
+      form: { tipo: '', fecha_inicio: '', dias: 1, observaciones: '' },
       certificado: null,
       dragActive: false,
       submitting: false,
@@ -100,12 +107,26 @@ export default {
     }
   },
   computed: {
-    diasCalc() {
-      if (!this.form.fecha_inicio || !this.form.fecha_fin) return 0
+    fechaFinCalculada() {
+      if (!this.form.fecha_inicio || !this.form.dias || this.form.dias < 1) return ''
       const d1 = new Date(this.form.fecha_inicio)
-      const d2 = new Date(this.form.fecha_fin)
-      if (d2 < d1) return 0
-      return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1
+      // Ajustar fecha fin sumando (dias - 1) dias calendario
+      d1.setDate(d1.getDate() + parseInt(this.form.dias) - 1)
+      
+      // Formatear a yyyy-mm-dd
+      const year = d1.getUTCFullYear()
+      const month = String(d1.getUTCMonth() + 1).padStart(2, '0')
+      const day = String(d1.getUTCDate()).padStart(2, '0')
+      return `${day}/${month}/${year}`
+    },
+    fechaFinFormatoBackend() {
+      if (!this.form.fecha_inicio || !this.form.dias || this.form.dias < 1) return ''
+      const d1 = new Date(this.form.fecha_inicio)
+      d1.setDate(d1.getDate() + parseInt(this.form.dias) - 1)
+      const year = d1.getUTCFullYear()
+      const month = String(d1.getUTCMonth() + 1).padStart(2, '0')
+      const day = String(d1.getUTCDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
     },
   },
   methods: {
@@ -129,8 +150,8 @@ export default {
     },
     async crearLicencia() {
       this.error = ''
-      if (this.form.fecha_fin < this.form.fecha_inicio) {
-        this.error = 'La fecha de fin no puede ser anterior a la fecha de inicio.'
+      if (!this.form.fecha_inicio || !this.form.dias || this.form.dias < 1) {
+        this.error = 'Debe ingresar una cantidad de días válida.'
         return
       }
 
@@ -139,7 +160,7 @@ export default {
         const formData = new FormData()
         formData.append('tipo', this.form.tipo)
         formData.append('fecha_inicio', this.form.fecha_inicio)
-        formData.append('fecha_fin', this.form.fecha_fin)
+        formData.append('fecha_fin', this.fechaFinFormatoBackend)
         if (this.form.observaciones) formData.append('observaciones', this.form.observaciones)
         if (this.certificado) formData.append('certificado_medico', this.certificado)
 
