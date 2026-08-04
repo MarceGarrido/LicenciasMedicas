@@ -21,6 +21,10 @@ urlpatterns = [
     path('auth/me/', views.me_view, name='me'),
     path('auth/cambiar-password/', views.cambiar_password_view, name='cambiar-password'),
 
+    # Gestión masiva (Admin)
+    path('admin/usuarios/carga-masiva/', views.carga_masiva_usuarios_view, name='carga-masiva'),
+    path('admin/usuarios/ascenso-lote/', views.ascenso_lote_view, name='ascenso-lote'),
+
     # Circulares
     path('circulares/', views.CircularListCreateView.as_view(), name='circulares-list'),
     path('circulares/<int:pk>/', views.CircularDeleteView.as_view(), name='circulares-delete'),

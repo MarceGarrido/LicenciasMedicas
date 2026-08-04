@@ -2,6 +2,9 @@
 API Views del Sistema de Licencias Médicas.
 """
 import logging
+import string
+import random
+import unicodedata
 from django.contrib.auth import authenticate
 from django.db.models import Count, Q
 from rest_framework import status, generics, viewsets
@@ -550,3 +553,258 @@ def jerarquias_list_view(request):
     )
     serializer = TipoPersonalSerializer(tipos, many=True)
     return Response(serializer.data)
+
+
+# ═══════════════════════════════════════════
+# GESTIÓN MASIVA (Solo Admin)
+# ═══════════════════════════════════════════
+
+def _normalizar_texto(texto):
+    """Quita tildes y caracteres especiales de un texto."""
+    nfkd = unicodedata.normalize('NFKD', texto)
+    return ''.join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def _generar_username(nombre_completo):
+    """Genera un username a partir del nombre completo.
+    Ej: 'Juan Carlos Pérez' → 'jcperez'
+    """
+    nombre_limpio = _normalizar_texto(nombre_completo.strip().lower())
+    partes = nombre_limpio.split()
+    if len(partes) == 0:
+        return 'usuario'
+
+    if len(partes) == 1:
+        base = partes[0][:10]
+    elif len(partes) == 2:
+        # nombre + apellido
+        base = partes[0][0] + partes[1]
+    elif len(partes) == 3:
+        # nombre + segundo_nombre + apellido
+        base = partes[0][0] + partes[1][0] + partes[2]
+    else:
+        # nombre + segundo + apellido1 + apellido2
+        base = partes[0][0] + partes[1][0] + partes[-2]
+
+    # Limpiar caracteres no alfanuméricos
+    base = ''.join(c for c in base if c.isalnum())
+
+    if not base:
+        base = 'usuario'
+
+    # Verificar unicidad
+    username = base
+    contador = 2
+    while Usuario.objects.filter(username=username).exists():
+        username = f'{base}{contador}'
+        contador += 1
+
+    return username
+
+
+def _generar_password(longitud=8):
+    """Genera una contraseña alfanumérica segura."""
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choices(chars, k=longitud))
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, EsAdmin])
+def carga_masiva_usuarios_view(request):
+    """Carga masiva de usuarios desde un archivo Excel (.xlsx).
+    Columnas esperadas: nombre_completo, dependencia, jerarquia, email (opcional)
+    """
+    import openpyxl
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return Response(
+            {'error': 'Debe adjuntar un archivo Excel (.xlsx).'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not archivo.name.endswith('.xlsx'):
+        return Response(
+            {'error': 'El archivo debe ser formato Excel (.xlsx).'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        wb = openpyxl.load_workbook(archivo, read_only=True)
+        ws = wb.active
+    except Exception:
+        return Response(
+            {'error': 'No se pudo leer el archivo Excel. Verifique que no esté dañado.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Leer encabezados
+    filas = list(ws.iter_rows(values_only=True))
+    if len(filas) < 2:
+        return Response(
+            {'error': 'El archivo debe tener al menos un encabezado y una fila de datos.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    headers = [str(h).strip().lower() if h else '' for h in filas[0]]
+
+    # Mapear columnas
+    col_map = {}
+    columnas_esperadas = {
+        'nombre_completo': ['nombre_completo', 'nombre completo', 'nombre', 'apellido y nombre'],
+        'dependencia': ['dependencia'],
+        'jerarquia': ['jerarquia', 'jerarquía'],
+        'email': ['email', 'correo', 'mail'],
+    }
+
+    for campo, aliases in columnas_esperadas.items():
+        for i, h in enumerate(headers):
+            if h in aliases:
+                col_map[campo] = i
+                break
+
+    if 'nombre_completo' not in col_map:
+        return Response(
+            {'error': 'El archivo debe tener una columna "nombre_completo" o "nombre".'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Cache de dependencias y jerarquías para búsqueda rápida
+    dependencias_cache = {}
+    for dep in Dependencia.objects.filter(activa=True).select_related('ciudad'):
+        key = _normalizar_texto(dep.nombre.strip().lower())
+        dependencias_cache[key] = dep
+        # También con ciudad
+        key_full = _normalizar_texto(f'{dep.nombre} - {dep.ciudad.nombre}'.strip().lower())
+        dependencias_cache[key_full] = dep
+
+    jerarquias_cache = {}
+    for jer in Jerarquia.objects.filter(activa=True).select_related('tipo_personal'):
+        key = _normalizar_texto(jer.nombre.strip().lower())
+        jerarquias_cache[key] = jer
+
+    resultados = []
+    errores = []
+    creados = 0
+
+    for idx, fila in enumerate(filas[1:], start=2):
+        # Extraer valores
+        nombre = str(fila[col_map['nombre_completo']] or '').strip() if 'nombre_completo' in col_map else ''
+        dep_nombre = str(fila[col_map.get('dependencia', -1)] or '').strip() if 'dependencia' in col_map and col_map['dependencia'] < len(fila) else ''
+        jer_nombre = str(fila[col_map.get('jerarquia', -1)] or '').strip() if 'jerarquia' in col_map and col_map['jerarquia'] < len(fila) else ''
+        email = str(fila[col_map.get('email', -1)] or '').strip() if 'email' in col_map and col_map['email'] < len(fila) else ''
+
+        if not nombre or nombre == 'None':
+            continue  # Saltar filas vacías
+
+        # Buscar dependencia
+        dependencia = None
+        if dep_nombre and dep_nombre != 'None':
+            dep_key = _normalizar_texto(dep_nombre.lower())
+            dependencia = dependencias_cache.get(dep_key)
+            if not dependencia:
+                errores.append({
+                    'fila': idx,
+                    'nombre': nombre,
+                    'error': f'Dependencia "{dep_nombre}" no encontrada.'
+                })
+                continue
+
+        # Buscar jerarquía
+        jerarquia = None
+        if jer_nombre and jer_nombre != 'None':
+            jer_key = _normalizar_texto(jer_nombre.lower())
+            jerarquia = jerarquias_cache.get(jer_key)
+            if not jerarquia:
+                errores.append({
+                    'fila': idx,
+                    'nombre': nombre,
+                    'error': f'Jerarquía "{jer_nombre}" no encontrada.'
+                })
+                continue
+
+        # Generar username y password
+        username = _generar_username(nombre)
+        password = _generar_password()
+
+        try:
+            usuario = Usuario(
+                username=username,
+                nombre_completo=nombre,
+                rol='personal',
+                email=email,
+                dependencia=dependencia,
+                jerarquia=jerarquia,
+            )
+            usuario.set_password(password)
+            usuario.save()
+
+            resultados.append({
+                'fila': idx,
+                'nombre_completo': nombre,
+                'username': username,
+                'password': password,
+                'dependencia': str(dependencia) if dependencia else '—',
+                'jerarquia': str(jerarquia) if jerarquia else '—',
+            })
+            creados += 1
+        except Exception as e:
+            errores.append({
+                'fila': idx,
+                'nombre': nombre,
+                'error': str(e),
+            })
+
+    return Response({
+        'creados': creados,
+        'total_filas': len(filas) - 1,
+        'errores': errores,
+        'usuarios': resultados,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, EsAdmin])
+def ascenso_lote_view(request):
+    """Ascender múltiples usuarios a una nueva jerarquía.
+    Recibe: usuario_ids (lista) y nueva_jerarquia_id (int).
+    """
+    usuario_ids = request.data.get('usuario_ids', [])
+    nueva_jerarquia_id = request.data.get('nueva_jerarquia_id')
+
+    if not usuario_ids:
+        return Response(
+            {'error': 'Debe seleccionar al menos un usuario.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not nueva_jerarquia_id:
+        return Response(
+            {'error': 'Debe seleccionar la nueva jerarquía.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        nueva_jerarquia = Jerarquia.objects.get(pk=nueva_jerarquia_id, activa=True)
+    except Jerarquia.DoesNotExist:
+        return Response(
+            {'error': 'La jerarquía seleccionada no existe o no está activa.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    usuarios = Usuario.objects.filter(id__in=usuario_ids, is_active=True)
+    cantidad = usuarios.count()
+
+    if cantidad == 0:
+        return Response(
+            {'error': 'No se encontraron usuarios activos con los IDs proporcionados.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    usuarios.update(jerarquia=nueva_jerarquia)
+
+    return Response({
+        'ascendidos': cantidad,
+        'nueva_jerarquia': str(nueva_jerarquia),
+    })
+
