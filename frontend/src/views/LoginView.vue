@@ -5,7 +5,7 @@
       <div class="login-card glass-card">
         <div class="login-header">
           <span class="login-icon">🏥</span>
-          <h1 class="login-title">Licencias Médicas</h1>
+          <h1 class="login-title">Aviso de Licencias Policiales</h1>
           <p class="login-subtitle">Sistema de Gestión</p>
         </div>
 

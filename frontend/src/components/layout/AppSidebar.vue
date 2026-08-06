@@ -3,7 +3,7 @@
     <div class="sidebar__header">
       <div class="sidebar__logo" @click="$router.push('/')">
         <span class="sidebar__logo-icon">🏥</span>
-        <span v-if="!collapsed" class="sidebar__logo-text">Licencias Médicas</span>
+        <span v-if="!collapsed" class="sidebar__logo-text">Aviso de Licencias Policiales</span>
       </div>
       <button v-if="!isMobile" class="sidebar__toggle btn-ghost btn-icon" @click="$emit('toggle')">
         {{ collapsed ? '▸' : '◂' }}
