@@ -39,6 +39,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    volumes:
+      - media_data:/app/media
 
 volumes:
   postgres_data:
