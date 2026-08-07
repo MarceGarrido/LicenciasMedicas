@@ -1,0 +1,17 @@
+{
+  "name": "Aviso de Licencias Policiales",
+  "short_name": "Licencias",
+  "description": "Sistema de gestión de licencias médicas para el personal policial.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a192f",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
