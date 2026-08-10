@@ -41,6 +41,10 @@ export const authService = {
     return data ? JSON.parse(data) : null
   },
 
+  setUsuario(usuario) {
+    localStorage.setItem('usuario', JSON.stringify(usuario))
+  },
+
   getToken() {
     return localStorage.getItem('auth_token')
   },

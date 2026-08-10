@@ -21,6 +21,9 @@
         <span class="header__chevron">▾</span>
       </div>
       <div v-if="showMenu" class="header__dropdown" @click.stop>
+        <button class="header__dropdown-item" @click="abrirActualizarDatos">
+          📋 Actualizar datos
+        </button>
         <button class="header__dropdown-item" @click="cambiarPassword">
           🔒 Cambiar contraseña
         </button>
@@ -63,9 +66,56 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal actualizar datos -->
+  <div v-if="showDatosModal" class="modal-overlay" @click.self="showDatosModal = false">
+    <div class="modal" style="max-width:500px">
+      <div class="modal__header">
+        <h3 class="modal__title">📋 Actualizar mis datos</h3>
+        <button class="btn-ghost btn-icon" @click="showDatosModal = false">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="perfil-actual">
+          <div class="perfil-actual__item">
+            <span class="perfil-actual__label">Jerarquía actual:</span>
+            <span class="perfil-actual__value">{{ usuario?.jerarquia_nombre || 'Sin asignar' }}</span>
+          </div>
+          <div class="perfil-actual__item">
+            <span class="perfil-actual__label">Dependencia actual:</span>
+            <span class="perfil-actual__value">{{ usuario?.dependencia_nombre || 'Sin asignar' }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jerarquía</label>
+          <select class="form-control" v-model="datosForm.jerarquia">
+            <option :value="null">— Sin asignar —</option>
+            <optgroup v-for="t in tiposPersonal" :key="t.id" :label="t.nombre">
+              <option v-for="j in t.jerarquias" :key="j.id" :value="j.id">{{ j.nombre }}</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dependencia (lugar donde brinda servicio)</label>
+          <select class="form-control" v-model="datosForm.dependencia">
+            <option :value="null">— Sin asignar —</option>
+            <option v-for="d in dependencias" :key="d.id" :value="d.id">{{ d.nombre }} ({{ d.ciudad_nombre }})</option>
+          </select>
+        </div>
+        <p v-if="datosError" class="form-error">{{ datosError }}</p>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn-secondary" @click="showDatosModal = false">Cancelar</button>
+        <button class="btn btn-primary" @click="submitDatos" :disabled="datosLoading">
+          {{ datosLoading ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
+import api from '../../services/api'
 import authService from '../../services/authService'
 
 const rolLabels = {
@@ -82,9 +132,15 @@ export default {
     return {
       showMenu: false,
       showPasswordModal: false,
+      showDatosModal: false,
       passwordForm: { actual: '', nueva: '', confirmar: '' },
       passwordError: '',
       passwordLoading: false,
+      datosForm: { jerarquia: null, dependencia: null },
+      datosError: '',
+      datosLoading: false,
+      tiposPersonal: [],
+      dependencias: [],
       isDark: (localStorage.getItem('theme') || 'dark') === 'dark',
     }
   },
@@ -143,6 +199,45 @@ export default {
         this.passwordError = e.response?.data?.password_actual?.[0] || e.response?.data?.error || 'Error al cambiar contraseña.'
       } finally {
         this.passwordLoading = false
+      }
+    },
+    async abrirActualizarDatos() {
+      this.showMenu = false
+      this.datosError = ''
+      this.datosForm = {
+        jerarquia: this.usuario?.jerarquia || null,
+        dependencia: this.usuario?.dependencia || null,
+      }
+      this.showDatosModal = true
+
+      // Cargar opciones
+      try {
+        const [tipRes, depRes] = await Promise.all([
+          api.get('/jerarquias/'),
+          api.get('/dependencias/'),
+        ])
+        this.tiposPersonal = tipRes.data.results || tipRes.data
+        this.dependencias = depRes.data.results || depRes.data
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    async submitDatos() {
+      this.datosError = ''
+      this.datosLoading = true
+      try {
+        const res = await api.put('/auth/actualizar-perfil/', {
+          jerarquia: this.datosForm.jerarquia,
+          dependencia: this.datosForm.dependencia,
+        })
+        // Actualizar datos en localStorage
+        authService.setUsuario(res.data.usuario)
+        this.showDatosModal = false
+        this.$root.showToast?.('Datos actualizados correctamente.', 'success')
+      } catch (e) {
+        this.datosError = e.response?.data?.error || 'Error al actualizar los datos.'
+      } finally {
+        this.datosLoading = false
       }
     },
     async cerrarSesion() {
@@ -302,6 +397,33 @@ export default {
 
 .menu-icon {
   font-size: 1.125rem;
+}
+
+/* Perfil actual info */
+.perfil-actual {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.perfil-actual__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.perfil-actual__label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.perfil-actual__value {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 @media (max-width: 768px) {

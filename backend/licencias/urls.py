@@ -20,6 +20,7 @@ urlpatterns = [
     path('auth/logout/', views.logout_view, name='logout'),
     path('auth/me/', views.me_view, name='me'),
     path('auth/cambiar-password/', views.cambiar_password_view, name='cambiar-password'),
+    path('auth/actualizar-perfil/', views.actualizar_perfil_view, name='actualizar-perfil'),
 
     # Gestión masiva (Admin)
     path('admin/usuarios/carga-masiva/', views.carga_masiva_usuarios_view, name='carga-masiva'),

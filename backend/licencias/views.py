@@ -120,6 +120,47 @@ def cambiar_password_view(request):
     })
 
 
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def actualizar_perfil_view(request):
+    """Permite al usuario actualizar su propia jerarquía y dependencia."""
+    user = request.user
+    jerarquia_id = request.data.get('jerarquia')
+    dependencia_id = request.data.get('dependencia')
+
+    if jerarquia_id is not None:
+        if jerarquia_id == '' or jerarquia_id is None:
+            user.jerarquia = None
+        else:
+            try:
+                user.jerarquia = Jerarquia.objects.get(pk=jerarquia_id, activa=True)
+            except Jerarquia.DoesNotExist:
+                return Response(
+                    {'error': 'Jerarquía no encontrada.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+    if dependencia_id is not None:
+        if dependencia_id == '' or dependencia_id is None:
+            user.dependencia = None
+        else:
+            try:
+                user.dependencia = Dependencia.objects.get(pk=dependencia_id, activa=True)
+            except Dependencia.DoesNotExist:
+                return Response(
+                    {'error': 'Dependencia no encontrada.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+    user.save()
+
+    serializer = UsuarioDetailSerializer(user)
+    return Response({
+        'message': 'Perfil actualizado correctamente.',
+        'usuario': serializer.data,
+    })
+
+
 # ═══════════════════════════════════════════
 # ADMINISTRACIÓN (Solo Admin)
 # ═══════════════════════════════════════════
