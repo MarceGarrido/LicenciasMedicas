@@ -6,12 +6,12 @@ from datetime import datetime
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .permissions import EsAdminOBienestar
+from .permissions import PuedeVerReportesYPersonal
 from .models import Licencia, Usuario
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, EsAdminOBienestar])
+@permission_classes([IsAuthenticated, PuedeVerReportesYPersonal])
 def exportar_excel(request):
     """Exportar reporte de licencias a Excel."""
     import openpyxl
@@ -113,7 +113,7 @@ def exportar_excel(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, EsAdminOBienestar])
+@permission_classes([IsAuthenticated, PuedeVerReportesYPersonal])
 def exportar_pdf(request):
     """Exportar reporte de licencias a PDF."""
     from reportlab.lib.pagesizes import A4, landscape

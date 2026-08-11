@@ -72,28 +72,7 @@
         </div>
       </div>
 
-      <!-- Charts -->
-      <div class="grid grid-cols-2 mb-6">
-        <div class="glass-card">
-          <h3 class="mb-4">Licencias por mes</h3>
-          <canvas ref="chartMes"></canvas>
-        </div>
-        <div class="glass-card">
-          <h3 class="mb-4">Por estado</h3>
-          <canvas ref="chartEstado"></canvas>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 mb-6">
-        <div class="glass-card">
-          <h3 class="mb-4">Top dependencias (Total Histórico)</h3>
-          <canvas ref="chartDep"></canvas>
-        </div>
-        <div class="glass-card">
-          <h3 class="mb-4">Por ciudad (Total Histórico)</h3>
-          <canvas ref="chartCiudad"></canvas>
-        </div>
-      </div>
+      <!-- Charts removidos temporalmente -->
     </template>
   </div>
 </template>
@@ -172,78 +151,7 @@ export default {
         },
       }
 
-      // Per month bar chart
-      if (this.$refs.chartMes) {
-        this.charts.push(new Chart(this.$refs.chartMes, {
-          type: 'bar',
-          data: {
-            labels: this.datos.por_mes.map(m => m.mes),
-            datasets: [{
-              label: 'Licencias',
-              data: this.datos.por_mes.map(m => m.total),
-              backgroundColor: 'rgba(59, 130, 246, 0.6)',
-              borderColor: '#3b82f6',
-              borderWidth: 1,
-              borderRadius: 6,
-            }],
-          },
-          options: chartOpts,
-        }))
-      }
-
-      // Status pie chart
-      if (this.$refs.chartEstado) {
-        const estadoColors = { iniciada: '#3b82f6', en_curso: '#f59e0b', finalizada: '#10b981' }
-        const estadoLabels = { iniciada: 'Iniciada', en_curso: 'En Curso', finalizada: 'Finalizada' }
-        this.charts.push(new Chart(this.$refs.chartEstado, {
-          type: 'doughnut',
-          data: {
-            labels: this.datos.por_estado.map(e => estadoLabels[e.estado] || e.estado),
-            datasets: [{
-              data: this.datos.por_estado.map(e => e.total),
-              backgroundColor: this.datos.por_estado.map(e => estadoColors[e.estado] || '#6b7280'),
-              borderWidth: 0,
-            }],
-          },
-          options: { responsive: true, plugins: { legend: { labels: { color: '#9ca3af' } } } },
-        }))
-      }
-
-      // Top dependencias horizontal bar
-      if (this.$refs.chartDep) {
-        this.charts.push(new Chart(this.$refs.chartDep, {
-          type: 'bar',
-          data: {
-            labels: this.datos.por_dependencia.map(d => d.dependencia),
-            datasets: [{
-              label: 'Licencias',
-              data: this.datos.por_dependencia.map(d => d.total),
-              backgroundColor: 'rgba(139, 92, 246, 0.6)',
-              borderColor: '#8b5cf6',
-              borderWidth: 1,
-              borderRadius: 6,
-            }],
-          },
-          options: { ...chartOpts, indexAxis: 'y' },
-        }))
-      }
-
-      // Per city
-      if (this.$refs.chartCiudad) {
-        const cityColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
-        this.charts.push(new Chart(this.$refs.chartCiudad, {
-          type: 'doughnut',
-          data: {
-            labels: this.datos.por_ciudad.map(c => c.ciudad),
-            datasets: [{
-              data: this.datos.por_ciudad.map(c => c.total),
-              backgroundColor: cityColors,
-              borderWidth: 0,
-            }],
-          },
-          options: { responsive: true, plugins: { legend: { labels: { color: '#9ca3af' } } } },
-        }))
-      }
+      // Gráficos desactivados temporalmente a petición del usuario.
     },
     async exportar(formato) {
       try {
