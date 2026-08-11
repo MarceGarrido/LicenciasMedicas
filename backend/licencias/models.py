@@ -118,6 +118,7 @@ class Usuario(AbstractUser):
     """Usuario del sistema con rol y datos institucionales."""
     ROL_CHOICES = [
         ('admin', 'Administrador'),
+        ('supervisor', 'Supervisor'),
         ('personal', 'Personal'),
         ('rrhh', 'Recursos Humanos'),
         ('bienestar', 'Bienestar'),
@@ -174,6 +175,10 @@ class Usuario(AbstractUser):
     @property
     def es_bienestar(self):
         return self.rol == 'bienestar'
+
+    @property
+    def es_supervisor(self):
+        return self.rol == 'supervisor'
 
 
 # ─── Licencias ───

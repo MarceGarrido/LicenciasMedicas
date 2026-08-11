@@ -31,6 +31,7 @@ from .serializers import (
 from .permissions import (
     EsAdmin, EsRRHH, EsBienestar, EsAdminOBienestar, EsAdminORRHH,
     PuedeCrearLicencia, PuedeVerCertificado, EsDuenoOBienestar,
+    PuedeVerReportesYPersonal,
 )
 from .email_service import enviar_email_nueva_licencia, enviar_email_certificado
 
@@ -278,8 +279,8 @@ class LicenciaListCreateView(generics.ListCreateAPIView):
             'usuario__dependencia__ciudad'
         )
 
-        if user.rol in ('bienestar', 'admin'):
-            # Bienestar y Admin ven todas
+        if user.rol in ('bienestar', 'admin', 'supervisor'):
+            # Bienestar, Admin y Supervisor ven todas
             pass
         else:
             # Personal y RRHH ven solo las propias
@@ -296,7 +297,7 @@ class LicenciaListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(tipo=tipo)
         if estado:
             qs = qs.filter(estado=estado)
-        if usuario_id and user.rol in ('bienestar', 'admin'):
+        if usuario_id and user.rol in ('bienestar', 'admin', 'supervisor'):
             qs = qs.filter(usuario_id=usuario_id)
         if fecha_desde:
             qs = qs.filter(fecha_inicio__gte=fecha_desde)
@@ -430,7 +431,7 @@ def descargar_certificado_view(request, pk):
 @permission_classes([IsAuthenticated])
 def personal_list_view(request):
     """Listar personal con resumen de licencias (RRHH y Bienestar)."""
-    if request.user.rol not in ('bienestar', 'rrhh', 'admin'):
+    if request.user.rol not in ('bienestar', 'rrhh', 'admin', 'supervisor'):
         return Response(
             {'error': 'No tiene permiso para ver esta información.'},
             status=status.HTTP_403_FORBIDDEN
@@ -463,7 +464,7 @@ def personal_list_view(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, EsAdminOBienestar])
+@permission_classes([IsAuthenticated, PuedeVerReportesYPersonal])
 def personal_licencias_view(request, pk):
     """Historial de licencias de un usuario específico (Bienestar)."""
     try:
@@ -494,7 +495,7 @@ def personal_licencias_view(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, EsAdminOBienestar])
+@permission_classes([IsAuthenticated, PuedeVerReportesYPersonal])
 def reportes_resumen_view(request):
     """Estadísticas generales para el dashboard de Bienestar."""
     from django.utils import timezone

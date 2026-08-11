@@ -51,7 +51,7 @@
       </div>
 
       <!-- Bienestar / Gestión -->
-      <div v-if="tieneRol(['bienestar'])" class="sidebar__section">
+      <div v-if="tieneRol(['bienestar', 'supervisor'])" class="sidebar__section">
         <span v-if="!collapsed" class="sidebar__section-title">
           {{ isSoloAdmin ? 'Gestión' : 'Bienestar' }}
         </span>
@@ -113,11 +113,11 @@
       <span class="bottom-nav__icon">📁</span>
       <span class="bottom-nav__label">Mis Lic.</span>
     </router-link>
-    <router-link v-if="tieneRol(['bienestar'])" to="/licencias/gestion" class="bottom-nav__item" active-class="bottom-nav__item--active">
+    <router-link v-if="tieneRol(['bienestar', 'supervisor'])" to="/licencias/gestion" class="bottom-nav__item" active-class="bottom-nav__item--active">
       <span class="bottom-nav__icon">📑</span>
       <span class="bottom-nav__label">Licencias</span>
     </router-link>
-    <router-link v-if="tieneRol(['bienestar'])" to="/reportes" class="bottom-nav__item" active-class="bottom-nav__item--active">
+    <router-link v-if="tieneRol(['bienestar', 'supervisor'])" to="/reportes" class="bottom-nav__item" active-class="bottom-nav__item--active">
       <span class="bottom-nav__icon">📈</span>
       <span class="bottom-nav__label">Reportes</span>
     </router-link>

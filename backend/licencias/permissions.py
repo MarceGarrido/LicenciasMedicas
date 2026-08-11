@@ -34,6 +34,12 @@ class EsAdminOBienestar(BasePermission):
         return request.user.is_authenticated and request.user.rol in ('admin', 'bienestar')
 
 
+class PuedeVerReportesYPersonal(BasePermission):
+    """Admin, Bienestar o Supervisor."""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.rol in ('admin', 'bienestar', 'supervisor')
+
+
 class EsAdminORRHH(BasePermission):
     """Administrador o Recursos Humanos."""
     def has_permission(self, request, view):
@@ -53,8 +59,8 @@ class PuedeVerCertificado(BasePermission):
 
 
 class EsDuenoOBienestar(BasePermission):
-    """El dueño de la licencia o Bienestar/Admin."""
+    """El dueño de la licencia o Bienestar/Admin/Supervisor."""
     def has_object_permission(self, request, view, obj):
-        if request.user.rol in ('bienestar', 'admin'):
+        if request.user.rol in ('bienestar', 'admin', 'supervisor'):
             return True
         return obj.usuario == request.user
