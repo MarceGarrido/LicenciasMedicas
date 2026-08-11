@@ -438,7 +438,7 @@ def personal_list_view(request):
         )
 
     usuarios = Usuario.objects.filter(
-        rol='personal', is_active=True
+        is_active=True
     ).select_related(
         'jerarquia', 'jerarquia__tipo_personal',
         'dependencia', 'dependencia__ciudad'
