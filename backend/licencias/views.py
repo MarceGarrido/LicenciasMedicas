@@ -541,6 +541,18 @@ def reportes_resumen_view(request):
         total=Count('id')
     ).order_by('-total')
 
+    # Licencias activas por dependencia
+    hoy = timezone.localdate()
+    activas = licencias.filter(fecha_fin__gte=hoy)
+    dep_activas = activas.values(
+        'usuario__dependencia__id',
+        'usuario__dependencia__nombre',
+        'usuario__dependencia__ciudad__id',
+        'usuario__dependencia__ciudad__nombre'
+    ).annotate(
+        total_activas=Count('id')
+    ).order_by('-total_activas')
+
     return Response({
         'total': total,
         'por_tipo': list(por_tipo),
@@ -557,6 +569,7 @@ def reportes_resumen_view(request):
             {'ciudad': item['usuario__dependencia__ciudad__nombre'] or 'Sin ciudad', 'total': item['total']}
             for item in por_ciudad
         ],
+        'dependencias_activas': list(dep_activas),
     })
 
 
