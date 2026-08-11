@@ -47,9 +47,9 @@ class PuedeCrearLicencia(BasePermission):
 
 
 class PuedeVerCertificado(BasePermission):
-    """Solo Bienestar y Admin pueden ver certificados médicos."""
+    """Solo Bienestar puede ver certificados médicos."""
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.rol in ('bienestar', 'admin')
+        return request.user.is_authenticated and request.user.rol == 'bienestar'
 
 
 class EsDuenoOBienestar(BasePermission):
