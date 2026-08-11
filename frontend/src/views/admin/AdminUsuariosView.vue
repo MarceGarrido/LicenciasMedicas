@@ -24,6 +24,7 @@
             <option value="personal">Personal</option>
             <option value="rrhh">RRHH</option>
             <option value="bienestar">Bienestar</option>
+            <option value="supervisor">Supervisor</option>
             <option value="admin">Administrador</option>
           </select>
         </div>
@@ -112,6 +113,7 @@
                 <option value="personal">Personal</option>
                 <option value="rrhh">Recursos Humanos</option>
                 <option value="bienestar">Bienestar</option>
+                <option value="supervisor">Supervisor</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -173,8 +175,8 @@ import api from '../../services/api'
 import AdminCargaMasivaModal from '../../components/admin/AdminCargaMasivaModal.vue'
 import AdminAscensoLoteModal from '../../components/admin/AdminAscensoLoteModal.vue'
 
-const rolLabels = { admin: 'Administrador', personal: 'Personal', rrhh: 'RRHH', bienestar: 'Bienestar' }
-const rolBadges = { admin: 'badge-danger', personal: 'badge-primary', rrhh: 'badge-info', bienestar: 'badge-success' }
+const rolLabels = { admin: 'Administrador', supervisor: 'Supervisor', personal: 'Personal', rrhh: 'RRHH', bienestar: 'Bienestar' }
+const rolBadges = { admin: 'badge-danger', supervisor: 'badge-warning', personal: 'badge-primary', rrhh: 'badge-info', bienestar: 'badge-success' }
 
 export default {
   name: 'AdminUsuariosView',
