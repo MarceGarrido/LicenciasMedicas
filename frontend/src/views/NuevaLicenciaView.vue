@@ -17,6 +17,38 @@
             <option value="atendible">Razón Atendible</option>
           </select>
         </div>
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label">DNI *</label>
+            <input type="text" class="form-control" v-model="form.dni" required placeholder="Sin puntos" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Legajo *</label>
+            <input type="text" class="form-control" v-model="form.legajo" required />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label">Domicilio durante la licencia *</label>
+            <input type="text" class="form-control" v-model="form.domicilio" required placeholder="Calle y Número" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email de contacto *</label>
+            <input type="email" class="form-control" v-model="form.email_contacto" required />
+          </div>
+        </div>
+        
+        <div class="flex gap-4 mb-4" style="flex-wrap: wrap;">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" v-model="form.es_internacion" />
+            <span style="font-weight: 500;">Es caso de internación</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" v-model="form.cursando_licencia_anual" />
+            <span style="font-weight: 500;">Me encuentro cursando Licencia Anual</span>
+          </label>
+        </div>
 
         <div class="grid grid-cols-2">
           <div class="form-group">
@@ -46,7 +78,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Certificado médico (opcional)</label>
+          <label class="form-label">Certificado médico <span v-if="!form.es_internacion">*</span><span v-else>(opcional por internación)</span></label>
           <div class="file-upload" @click="$refs.cert.click()" @dragover.prevent="dragActive = true" @dragleave="dragActive = false" @drop.prevent="onDrop" :class="{ 'file-upload--active': dragActive }">
             <div v-if="certificado">
               <div class="file-upload__icon">📎</div>
@@ -97,7 +129,11 @@ export default {
   inject: ['showToast'],
   data() {
     return {
-      form: { tipo: '', fecha_inicio: '', dias: 1, observaciones: '' },
+      form: { 
+        tipo: '', fecha_inicio: '', dias: 1, observaciones: '',
+        dni: '', legajo: '', domicilio: '', email_contacto: '',
+        es_internacion: false, cursando_licencia_anual: false
+      },
       certificado: null,
       dragActive: false,
       submitting: false,
@@ -155,12 +191,24 @@ export default {
         return
       }
 
+      if (!this.form.es_internacion && !this.certificado) {
+        this.error = 'Debe adjuntar el certificado médico salvo caso de internación.'
+        return
+      }
+
       this.submitting = true
       try {
         const formData = new FormData()
         formData.append('tipo', this.form.tipo)
         formData.append('fecha_inicio', this.form.fecha_inicio)
         formData.append('fecha_fin', this.fechaFinFormatoBackend)
+        formData.append('dni', this.form.dni)
+        formData.append('legajo', this.form.legajo)
+        formData.append('domicilio', this.form.domicilio)
+        formData.append('email_contacto', this.form.email_contacto)
+        formData.append('es_internacion', this.form.es_internacion ? 'True' : 'False')
+        formData.append('cursando_licencia_anual', this.form.cursando_licencia_anual ? 'True' : 'False')
+        
         if (this.form.observaciones) formData.append('observaciones', this.form.observaciones)
         if (this.certificado) formData.append('certificado_medico', this.certificado)
 

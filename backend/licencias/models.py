@@ -129,6 +129,8 @@ class Usuario(AbstractUser):
         choices=ROL_CHOICES,
         default='personal'
     )
+    dni = models.CharField(max_length=20, blank=True, default='')
+    legajo = models.CharField(max_length=20, blank=True, default='')
     nombre_completo = models.CharField(max_length=200)
     jerarquia = models.ForeignKey(
         Jerarquia,
@@ -209,6 +211,10 @@ class Licencia(models.Model):
     )
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
+    domicilio = models.CharField(max_length=255, blank=True, default='', help_text='Domicilio real durante la licencia')
+    email_contacto = models.EmailField(blank=True, default='', help_text='Email de contacto')
+    cursando_licencia_anual = models.BooleanField(default=False)
+    es_internacion = models.BooleanField(default=False)
     observaciones = models.TextField(blank=True, default='')
     certificado_medico = models.FileField(
         upload_to='certificados/',

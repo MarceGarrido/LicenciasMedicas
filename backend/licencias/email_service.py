@@ -17,7 +17,7 @@ def enviar_email_nueva_licencia(licencia):
     usuario = licencia.usuario
     tipo_display = licencia.get_tipo_display()
 
-    asunto = f'Nueva Licencia - {tipo_display} - {usuario.nombre_completo}'
+    asunto = f'Nueva Licencia: {usuario.nombre_completo} - Legajo {usuario.legajo or "Sin Legajo"}'
 
     cuerpo = f"""
 Se ha iniciado una nueva licencia en el sistema.
@@ -25,8 +25,16 @@ Se ha iniciado una nueva licencia en el sistema.
 DATOS DE LA LICENCIA:
 ─────────────────────
 Personal: {usuario.nombre_completo}
+DNI: {usuario.dni or 'No registrado'}
+Legajo: {usuario.legajo or 'No registrado'}
 Jerarquía: {usuario.jerarquia.nombre if usuario.jerarquia else 'No asignada'}
 Dependencia: {usuario.dependencia.nombre if usuario.dependencia else 'No asignada'}
+
+Domicilio durante licencia: {licencia.domicilio or 'No registrado'}
+Email de contacto: {licencia.email_contacto or 'No registrado'}
+¿Es caso de internación?: {'Sí' if licencia.es_internacion else 'No'}
+¿Cursa licencia anual?: {'Sí' if licencia.cursando_licencia_anual else 'No'}
+
 Tipo de Licencia: {tipo_display}
 Fecha de Inicio: {licencia.fecha_inicio.strftime('%d/%m/%Y')}
 Fecha de Fin: {licencia.fecha_fin.strftime('%d/%m/%Y')}
@@ -98,7 +106,7 @@ def enviar_email_certificado(licencia):
         return False
 
     tipo_display = licencia.get_tipo_display()
-    asunto = f'Certificado Médico - {usuario.nombre_completo} - {tipo_display}'
+    asunto = f'Certificado Médico: {usuario.nombre_completo} - Legajo {usuario.legajo or "Sin Legajo"}'
 
     cuerpo = f"""
 Se ha cargado un certificado médico en el sistema.
@@ -106,6 +114,8 @@ Se ha cargado un certificado médico en el sistema.
 DATOS:
 ─────────────────────
 Personal: {usuario.nombre_completo}
+DNI: {usuario.dni or 'No registrado'}
+Legajo: {usuario.legajo or 'No registrado'}
 Jerarquía: {usuario.jerarquia.nombre if usuario.jerarquia else 'No asignada'}
 Dependencia: {usuario.dependencia.nombre if usuario.dependencia else 'No asignada'}
 Tipo de Licencia: {tipo_display}

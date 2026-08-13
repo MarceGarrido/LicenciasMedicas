@@ -98,6 +98,7 @@ class UsuarioDetailSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'username', 'nombre_completo', 'rol', 'email',
+            'dni', 'legajo',
             'jerarquia', 'jerarquia_nombre',
             'dependencia', 'dependencia_nombre',
             'ciudad_nombre', 'tipo_personal_nombre',
@@ -207,23 +208,51 @@ class LicenciaSerializer(serializers.ModelSerializer):
 
 class LicenciaCreateSerializer(serializers.ModelSerializer):
     """Serializer para crear licencias (Personal)."""
+    dni = serializers.CharField(write_only=True, required=True)
+    legajo = serializers.CharField(write_only=True, required=True)
+
     class Meta:
         model = Licencia
-        fields = ['id', 'tipo', 'fecha_inicio', 'fecha_fin', 'observaciones', 'certificado_medico']
+        fields = [
+            'id', 'tipo', 'fecha_inicio', 'fecha_fin', 'observaciones',
+            'certificado_medico', 'domicilio', 'email_contacto',
+            'cursando_licencia_anual', 'es_internacion', 'dni', 'legajo'
+        ]
 
     def validate(self, data):
         if data.get('fecha_fin') and data.get('fecha_inicio') and data['fecha_fin'] < data['fecha_inicio']:
             raise serializers.ValidationError(
                 {'fecha_fin': 'La fecha de fin no puede ser anterior a la fecha de inicio.'}
             )
+            
+        es_internacion = data.get('es_internacion', False)
+        certificado = data.get('certificado_medico')
+        
+        if not es_internacion and not certificado:
+            raise serializers.ValidationError(
+                {'certificado_medico': 'El certificado médico es obligatorio salvo en caso de internación.'}
+            )
+            
         return data
 
     def validate_certificado_medico(self, value):
+        if not value:
+            return value
         from .utils import validar_y_convertir_a_pdf
         return validar_y_convertir_a_pdf(value)
 
     def create(self, validated_data):
-        validated_data['usuario'] = self.context['request'].user
+        dni = validated_data.pop('dni', None)
+        legajo = validated_data.pop('legajo', None)
+        
+        usuario = self.context['request'].user
+        
+        if dni or legajo:
+            if dni: usuario.dni = dni
+            if legajo: usuario.legajo = legajo
+            usuario.save()
+            
+        validated_data['usuario'] = usuario
         return super().create(validated_data)
 
 
