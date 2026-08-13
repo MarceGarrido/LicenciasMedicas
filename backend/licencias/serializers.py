@@ -216,7 +216,8 @@ class LicenciaCreateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'tipo', 'fecha_inicio', 'fecha_fin', 'observaciones',
             'certificado_medico', 'domicilio', 'email_contacto',
-            'cursando_licencia_anual', 'es_internacion', 'dni', 'legajo'
+            'cursando_licencia_anual', 'es_internacion', 'dni', 'legajo',
+            'tipo_atencion', 'doctor_nombre'
         ]
 
     def validate(self, data):
@@ -232,6 +233,16 @@ class LicenciaCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'certificado_medico': 'El certificado médico es obligatorio salvo en caso de internación.'}
             )
+            
+        doctor = data.get('doctor_nombre', '').strip()
+        if not doctor:
+            raise serializers.ValidationError(
+                {'doctor_nombre': 'Debe ingresar el nombre del doctor.'}
+            )
+            
+        import unicodedata
+        doctor = unicodedata.normalize('NFD', doctor).encode('ascii', 'ignore').decode('utf-8')
+        data['doctor_nombre'] = doctor.upper()
             
         return data
 

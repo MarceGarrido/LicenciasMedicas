@@ -132,8 +132,16 @@ export default {
       form: { 
         tipo: '', fecha_inicio: '', dias: 1, observaciones: '',
         dni: '', legajo: '', domicilio: '', email_contacto: '',
-        es_internacion: false, cursando_licencia_anual: false
+        es_internacion: false, cursando_licencia_anual: false,
+        tipo_atencion: 'presencial', doctor_nombre: ''
       },
+      doctoresTelemedicina: [
+        'DR. TELEMEDICINA 1', 'DR. TELEMEDICINA 2', 'DR. TELEMEDICINA 3',
+        'DR. TELEMEDICINA 4', 'DR. TELEMEDICINA 5', 'DR. TELEMEDICINA 6',
+        'DR. TELEMEDICINA 7', 'DR. TELEMEDICINA 8', 'DR. TELEMEDICINA 9',
+        'DR. TELEMEDICINA 10', 'DR. TELEMEDICINA 11', 'DR. TELEMEDICINA 12',
+        'DR. TELEMEDICINA 13', 'DR. TELEMEDICINA 14', 'DR. TELEMEDICINA 15'
+      ],
       certificado: null,
       dragActive: false,
       submitting: false,
@@ -174,6 +182,12 @@ export default {
       const file = e.dataTransfer.files[0]
       if (file) this.certificado = file
     },
+    formatearDoctor() {
+      if (this.form.doctor_nombre) {
+        let val = this.form.doctor_nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        this.form.doctor_nombre = val.toUpperCase()
+      }
+    },
     async cargarUsuario() {
       // Necesitamos el ID del usuario para el botón "Ver mis licencias"
       try {
@@ -208,6 +222,8 @@ export default {
         formData.append('email_contacto', this.form.email_contacto)
         formData.append('es_internacion', this.form.es_internacion ? 'True' : 'False')
         formData.append('cursando_licencia_anual', this.form.cursando_licencia_anual ? 'True' : 'False')
+        formData.append('tipo_atencion', this.form.tipo_atencion)
+        formData.append('doctor_nombre', this.form.doctor_nombre)
         
         if (this.form.observaciones) formData.append('observaciones', this.form.observaciones)
         if (this.certificado) formData.append('certificado_medico', this.certificado)

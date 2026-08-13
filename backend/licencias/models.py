@@ -196,6 +196,10 @@ class Licencia(models.Model):
         ('en_curso', 'En Curso'),
         ('finalizada', 'Finalizada'),
     ]
+    TIPO_ATENCION_CHOICES = [
+        ('presencial', 'Presencial'),
+        ('telemedicina', 'Telemedicina'),
+    ]
 
     usuario = models.ForeignKey(
         Usuario,
@@ -215,6 +219,10 @@ class Licencia(models.Model):
     email_contacto = models.EmailField(blank=True, default='', help_text='Email de contacto')
     cursando_licencia_anual = models.BooleanField(default=False)
     es_internacion = models.BooleanField(default=False)
+    
+    tipo_atencion = models.CharField(max_length=20, choices=TIPO_ATENCION_CHOICES, default='presencial')
+    doctor_nombre = models.CharField(max_length=200, default='', help_text='Nombre del doctor que emite el certificado')
+
     observaciones = models.TextField(blank=True, default='')
     certificado_medico = models.FileField(
         upload_to='certificados/',

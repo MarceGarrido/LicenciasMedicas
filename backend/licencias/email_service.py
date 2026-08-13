@@ -35,6 +35,9 @@ Email de contacto: {licencia.email_contacto or 'No registrado'}
 ¿Es caso de internación?: {'Sí' if licencia.es_internacion else 'No'}
 ¿Cursa licencia anual?: {'Sí' if licencia.cursando_licencia_anual else 'No'}
 
+Atención Médica: {licencia.get_tipo_atencion_display()}
+Doctor Tratante: {licencia.doctor_nombre}
+
 Tipo de Licencia: {tipo_display}
 Fecha de Inicio: {licencia.fecha_inicio.strftime('%d/%m/%Y')}
 Fecha de Fin: {licencia.fecha_fin.strftime('%d/%m/%Y')}
