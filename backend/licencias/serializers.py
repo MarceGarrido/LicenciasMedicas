@@ -235,14 +235,15 @@ class LicenciaCreateSerializer(serializers.ModelSerializer):
             )
             
         doctor = data.get('doctor_nombre', '').strip()
-        if not doctor:
+        if not es_internacion and not doctor:
             raise serializers.ValidationError(
                 {'doctor_nombre': 'Debe ingresar el nombre del doctor.'}
             )
             
-        import unicodedata
-        doctor = unicodedata.normalize('NFD', doctor).encode('ascii', 'ignore').decode('utf-8')
-        data['doctor_nombre'] = doctor.upper()
+        if doctor:
+            import unicodedata
+            doctor = unicodedata.normalize('NFD', doctor).encode('ascii', 'ignore').decode('utf-8')
+            data['doctor_nombre'] = doctor.upper()
             
         return data
 

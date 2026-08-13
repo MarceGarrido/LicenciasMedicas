@@ -222,8 +222,14 @@ export default {
         formData.append('email_contacto', this.form.email_contacto)
         formData.append('es_internacion', this.form.es_internacion ? 'True' : 'False')
         formData.append('cursando_licencia_anual', this.form.cursando_licencia_anual ? 'True' : 'False')
-        formData.append('tipo_atencion', this.form.tipo_atencion)
-        formData.append('doctor_nombre', this.form.doctor_nombre)
+        
+        if (!this.form.es_internacion) {
+          formData.append('tipo_atencion', this.form.tipo_atencion)
+          formData.append('doctor_nombre', this.form.doctor_nombre)
+        } else {
+          formData.append('tipo_atencion', 'presencial')
+          formData.append('doctor_nombre', '')
+        }
         
         if (this.form.observaciones) formData.append('observaciones', this.form.observaciones)
         if (this.certificado) formData.append('certificado_medico', this.certificado)
